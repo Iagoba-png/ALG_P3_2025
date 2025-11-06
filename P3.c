@@ -72,8 +72,8 @@ void ordenar_aux(int v[], int izq, int der, int umbral){
         i = izq;
         j = der;
         do{
-            do { i = i + 1; } while (v[i] < pivote);   // repetir hasta v[i] >= pivote
-            do { j = j - 1; } while (v[j] > pivote);   // repetir hasta v[j] <= pivote
+            do { i = i + 1; } while (v[i] < pivote);
+            do { j = j - 1; } while (v[j] > pivote);
             intercambiar(&v[i], &v[j]);
         } while (j > i);
         intercambiar(&v[i], &v[j]); //deshacemos el último intercambio
@@ -104,7 +104,8 @@ void imprimir_vector(int v[], int n) {
 }
 
 //TESTS
-void testOrd_rapida_general(int v[], int n, int umbral, void (*inicializar)(int[], int)) {
+void testOrd_rapida_general(int v[], int n, int umbral, 
+                        void (*inicializar)(int[], int)) {
     int cont1 = 0, cont2 = 0, i;
     inicializar(v, n);
     for (i = 0; i < n; i++) {
@@ -152,8 +153,117 @@ void testOrd_rapida(){
     }
 }
 
+double calcularTiempo(int n, bool *bucle, void (*inicializar) (int[], int), int umbral){
+    int i;
+    double a, b, t, t1, t2;
+    int *v = malloc(n * sizeof(int));
+
+    *bucle = false;
+    inicializar(v, n);
+    a = microsegundos();
+    ord_rapida(v, n, umbral);
+    b = microsegundos();
+    t = b - a;
+
+    if (t < 500) {
+        *bucle = true;
+
+        a = microsegundos();
+        for (i = 0; i < 1000; i++) {
+            inicializar(v, n);
+            ord_rapida(v, n, umbral);
+        }
+        b = microsegundos();
+        t1 = b - a;
+
+        a = microsegundos();
+        for (i = 0; i < 1000; i++) {
+            inicializar(v, n);
+        }
+        b = microsegundos();
+        t2 = b - a;
+
+        t = (t1 - t2) / 1000.0;
+    }
+
+    free(v);
+    return t;
+}
+
+void tiempos_generico(void (*inicializar)(int[], int), int umbral,
+                      double cInf, double cAjust, double cSup,
+                      const char *fInf, const char *fAjust, const char *fSup) {
+    int n;
+    double t;
+    bool repeat;
+
+    printf("%15s%20s%20s%20s%20s\n", "n", "t(n)", fInf, fAjust, fSup);
+    for (n = 500; n <= 64000; n *= 2) {
+        t = calcularTiempo(n, &repeat, inicializar, umbral);
+        if (repeat) printf("(*) "); else printf("    ");
+        double valInf = (strcmp(fInf, "t(n)/n*log(n)") == 0) ? t / (n * log(n))
+                        : (strcmp(fInf, "t(n)/n") == 0) ? t / n
+                        : t / pow(n, cInf);
+
+        double valAjust = (strcmp(fAjust, "t(n)/n*log(n)") == 0) ? t / (n * log(n))
+                          : t / pow(n, cAjust);
+
+        double valSup = (strcmp(fSup, "t(n)/n*log(n)") == 0) ? t / (n * log(n))
+                        : t / pow(n, cSup);
+
+        printf("%14d%19.4f%19.7f%19.7f%19.7f\n", n, t, valInf, valAjust, valSup);
+    }
+}
+
+void tiempo_alg() {
+    int umbrales[] = {1, 10, 100};
+    printf("\nOrdenación rápida:\n");
+
+    for (int i = 0; i < 3; i++) {
+        int umbral = umbrales[i];
+        printf("\n---- UMBRAL = %d ----\n", umbral);
+
+        printf("\n\tVector ascendente:\n");
+        if (umbral == 1)
+            tiempos_generico(ascendente, umbral, 1.0, 1.1, 1.3, 
+                            "t(n)/n", "t(n)/n^1.1", "t(n)/n^1.3");
+        else if (umbral == 10)
+            tiempos_generico(ascendente, umbral, 0.9, 1.05, 1.2, 
+                            "t(n)/n^0.9", "t(n)/n^1.05", "t(n)/n^1.2");
+        else
+            tiempos_generico(ascendente, umbral, 1.0, 1.1, 1.3, 
+                            "t(n)/n", "t(n)/n^1.1", "t(n)/n^1.3");
+
+        printf("\n\tVector descendente:\n");
+        if (umbral == 1)
+            tiempos_generico(descendente, umbral, 1.0, 1.12, 1.3, 
+                            "t(n)/n", "t(n)/n^1.12", "t(n)/n^1.3");
+        else if (umbral == 10)
+            tiempos_generico(descendente, umbral, 1.0, 1.15, 1.3, 
+                            "t(n)/n", "t(n)/n^1.15", "t(n)/n^1.3");
+        else
+            tiempos_generico(descendente, umbral, 1.0, 1.12, 1.3, 
+                            "t(n)/n", "t(n)/n^1.12", "t(n)/n^1.3");
+
+        printf("\n\tVector aleatorio:\n");
+        if (umbral == 1)
+            tiempos_generico(aleatorio, umbral, 1.0, 1.1, 1.3, 
+                            "t(n)/n", "t(n)/n^1.1", "t(n)/n^1.3");
+        else if (umbral == 10)
+            tiempos_generico(aleatorio, umbral, 1.0, 1.1, 1.2, 
+                            "t(n)/n", "t(n)/n*log(n)", "t(n)/n^1.2");
+        else
+            tiempos_generico(aleatorio, umbral, 1.0, 1.1, 1.2, 
+                            "t(n)/n", "t(n)/n*log(n)", "t(n)/n^1.2");
+    }
+}
 
 int main() {
+    int i;
     inicializar_semilla();
     testOrd_rapida();
+   for(i = 0; i < 3; i++) {
+    tiempo_alg();
+   }
+
 }
