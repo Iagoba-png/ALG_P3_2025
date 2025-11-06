@@ -153,7 +153,9 @@ void testOrd_rapida(){
     }
 }
 
-double calcularTiempo(int n, bool *bucle, void (*inicializar) (int[], int), int umbral){
+double calcularTiempo_rapida(int n, bool *bucle,
+                             void (*inicializar)(int[], int),
+                             int umbral) {
     int i;
     double a, b, t, t1, t2;
     int *v = malloc(n * sizeof(int));
@@ -185,85 +187,117 @@ double calcularTiempo(int n, bool *bucle, void (*inicializar) (int[], int), int 
 
         t = (t1 - t2) / 1000.0;
     }
-
     free(v);
     return t;
 }
 
-void tiempos_generico(void (*inicializar)(int[], int), int umbral,
-                      double cInf, double cAjust, double cSup,
-                      const char *fInf, const char *fAjust, const char *fSup) {
+void cotasAsc(double t, int n, int umbral, double *sub, double *aj, double *sob) {
+    if (umbral == 1) {
+        *sub = t / n;
+        *aj  = t / pow(n, 1.1);
+        *sob = t / pow(n, 1.25);
+    } else if (umbral == 10) {
+        *sub = t / n;
+        *aj  = t / (n * log(n));
+        *sob = t / pow(n, 1.2);
+    } else {
+        *sub = t / n;
+        *aj  = t / (pow(n, 1.05) * log(n));
+        *sob = t / pow(n, 1.2);
+    }
+}
+
+void cotasDesc(double t, int n, int umbral, double *sub, double *aj, double *sob) {
+    if (umbral == 1) {
+        *sub = t / n;
+        *aj  = t / pow(n, 1.08);
+        *sob = t / pow(n, 1.18);
+    } else {
+        *sub = t / n;
+        *aj  = t / pow(n, 1.15);
+        *sob = t / pow(n, 1.25);
+    }
+}
+
+void cotasRnd(double t, int n, double *sub, double *aj, double *sob) {
+    *sub = t / n;
+    *aj  = t / (n * log(n));
+    *sob = t / pow(n, 1.18);
+}
+
+void cabeceraCotas(char *tipo, int umbral) {
+    char cotaSub[30], cotaAj[30], cotaSob[30];
+    if (strcmp(tipo, "Asc") == 0) {
+        if (umbral == 1) {
+            strcpy(cotaSub, "t(n)/n");
+            strcpy(cotaAj, "t(n)/n^1.1");
+            strcpy(cotaSob, "t(n)/n^1.25");
+        } else if (umbral == 10) {
+            strcpy(cotaSub, "t(n)/n");
+            strcpy(cotaAj, "t(n)/(n*logn)");
+            strcpy(cotaSob, "t(n)/n^1.2");
+        } else {
+            strcpy(cotaSub, "t(n)/n");
+            strcpy(cotaAj, "t(n)/(n^1.05 * logn)");
+            strcpy(cotaSob, "t(n)/n^1.2");
+        }
+    } else if (strcmp(tipo, "Desc") == 0) {
+        if (umbral == 1) {
+            strcpy(cotaSub, "t(n)/n");
+            strcpy(cotaAj, "t(n)/n^1.08");
+            strcpy(cotaSob, "t(n)/n^1.18");
+        } else {
+            strcpy(cotaSub, "t(n)/n");
+            strcpy(cotaAj, "t(n)/n^1.15");
+            strcpy(cotaSob, "t(n)/n^1.25");
+        }
+    } else { // Aleatorio
+        strcpy(cotaSub, "t(n)/n");
+        strcpy(cotaAj, "t(n)/(n*logn)");
+        strcpy(cotaSob, "t(n)/n^1.18");
+    }
+    printf("%15s%20s%20s%20s%20s\n", "n", "t(n)", cotaSub, cotaAj, cotaSob);
+}
+
+void showTime_rapida(void (*inicializar)(int[], int), char *nombre,
+                     char *tipo, int umbral) {
     int n;
-    double t;
+    double t, sub, aj, sob;
     bool repeat;
 
-    printf("%15s%20s%20s%20s%20s\n", "n", "t(n)", fInf, fAjust, fSup);
+    printf("\nOrdenación rápida (%s) (Umbral = %d)\n", nombre, umbral);
+    cabeceraCotas(tipo, umbral);
     for (n = 500; n <= 64000; n *= 2) {
-        t = calcularTiempo(n, &repeat, inicializar, umbral);
+        t = calcularTiempo_rapida(n, &repeat, inicializar, umbral);
+
+        // Selección de conjunto de cotas
+        if (strcmp(tipo, "Asc") == 0)
+            cotasAsc(t, n, umbral, &sub, &aj, &sob);
+        else if (strcmp(tipo, "Desc") == 0)
+            cotasDesc(t, n, umbral, &sub, &aj, &sob);
+        else
+            cotasRnd(t, n, &sub, &aj, &sob);
+
         if (repeat) printf("(*) "); else printf("    ");
-        double valInf = (strcmp(fInf, "t(n)/n*log(n)") == 0) ? t / (n * log(n))
-                        : (strcmp(fInf, "t(n)/n") == 0) ? t / n
-                        : t / pow(n, cInf);
-
-        double valAjust = (strcmp(fAjust, "t(n)/n*log(n)") == 0) ? t / (n * log(n))
-                          : t / pow(n, cAjust);
-
-        double valSup = (strcmp(fSup, "t(n)/n*log(n)") == 0) ? t / (n * log(n))
-                        : t / pow(n, cSup);
-
-        printf("%14d%19.4f%19.7f%19.7f%19.7f\n", n, t, valInf, valAjust, valSup);
+        printf("%14d%19.4f%19.7f%19.7f%19.7f\n", n, t, sub, aj, sob);
     }
 }
 
-void tiempo_alg() {
-    int umbrales[] = {1, 10, 100};
-    printf("\nOrdenación rápida:\n");
-
-    for (int i = 0; i < 3; i++) {
-        int umbral = umbrales[i];
-        printf("\n---- UMBRAL = %d ----\n", umbral);
-
-        printf("\n\tVector ascendente:\n");
-        if (umbral == 1)
-            tiempos_generico(ascendente, umbral, 1.0, 1.1, 1.3, 
-                            "t(n)/n", "t(n)/n^1.1", "t(n)/n^1.3");
-        else if (umbral == 10)
-            tiempos_generico(ascendente, umbral, 0.9, 1.05, 1.2, 
-                            "t(n)/n^0.9", "t(n)/n^1.05", "t(n)/n^1.2");
-        else
-            tiempos_generico(ascendente, umbral, 1.0, 1.1, 1.3, 
-                            "t(n)/n", "t(n)/n^1.1", "t(n)/n^1.3");
-
-        printf("\n\tVector descendente:\n");
-        if (umbral == 1)
-            tiempos_generico(descendente, umbral, 1.0, 1.12, 1.3, 
-                            "t(n)/n", "t(n)/n^1.12", "t(n)/n^1.3");
-        else if (umbral == 10)
-            tiempos_generico(descendente, umbral, 1.0, 1.15, 1.3, 
-                            "t(n)/n", "t(n)/n^1.15", "t(n)/n^1.3");
-        else
-            tiempos_generico(descendente, umbral, 1.0, 1.12, 1.3, 
-                            "t(n)/n", "t(n)/n^1.12", "t(n)/n^1.3");
-
-        printf("\n\tVector aleatorio:\n");
-        if (umbral == 1)
-            tiempos_generico(aleatorio, umbral, 1.0, 1.1, 1.3, 
-                            "t(n)/n", "t(n)/n^1.1", "t(n)/n^1.3");
-        else if (umbral == 10)
-            tiempos_generico(aleatorio, umbral, 1.0, 1.1, 1.2, 
-                            "t(n)/n", "t(n)/n*log(n)", "t(n)/n^1.2");
-        else
-            tiempos_generico(aleatorio, umbral, 1.0, 1.1, 1.2, 
-                            "t(n)/n", "t(n)/n*log(n)", "t(n)/n^1.2");
-    }
-}
 
 int main() {
     int i;
     inicializar_semilla();
     testOrd_rapida();
-   for(i = 0; i < 3; i++) {
-    tiempo_alg();
-   }
+    for(i = 0; i < 3; i++) {
+        showTime_rapida(ascendente, "Ascendente", "Asc", 1);
+        showTime_rapida(ascendente, "Ascendente", "Asc", 10);
+        showTime_rapida(ascendente, "Ascendente", "Asc", 100);
+        showTime_rapida(descendente, "Descendente", "Desc", 1);
+        showTime_rapida(descendente, "Descendente", "Desc", 10);
+        showTime_rapida(descendente, "Descendente", "Desc", 100);
+        showTime_rapida(aleatorio, "Aleatorio", "Rnd", 1);
+        showTime_rapida(aleatorio, "Aleatorio", "Rnd", 10);
+        showTime_rapida(aleatorio, "Aleatorio", "Rnd", 100);
+    }
 
 }
