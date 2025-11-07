@@ -191,7 +191,8 @@ double calcularTiempo_rapida(int n, bool *bucle,
     return t;
 }
 
-void cotasAsc(double t, int n, int umbral, double *sub, double *aj, double *sob) {
+void cotasAsc(double t, int n, int umbral, double *sub, 
+                double *aj, double *sob) {
     if (umbral == 1) {
         *sub = t / n;
         *aj  = t / pow(n, 1.1);
@@ -207,7 +208,8 @@ void cotasAsc(double t, int n, int umbral, double *sub, double *aj, double *sob)
     }
 }
 
-void cotasDesc(double t, int n, int umbral, double *sub, double *aj, double *sob) {
+void cotasDesc(double t, int n, int umbral, double *sub, 
+                double *aj, double *sob) {
     if (umbral == 1) {
         *sub = t / n;
         *aj  = t / pow(n, 1.08);
