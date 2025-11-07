@@ -411,7 +411,7 @@ En el caso de los vectores aleatorios (caso medio), comprobamos que la complejid
 *****************************************
 
 Tras analizar los resultados obtenidos, podemos afirmar que los casos ascendente y aleatorio presentan un crecimiento logarítmico, O(n·log n), lo que los hace los casos más eficientes. Mientras que el caso descendente,la complejidad empírica se aproxima a O(n^1.15), por lo que es el caso menos eficiente.
-En cuanto al umbral, aumentarlo reduce la recursividad, y mejora los timpos de ejecución de los casos ascendente y aleatorio (U=100 < U=10 < U=1), mientras que en descendente nuestras mediciones muestran U=10 como opción más rápida, seguida de U=1 y finalmente U=100.
+En cuanto al umbral, aumentarlo reduce la recursividad, y mejora los timpos de ejecución (U=100 < U=10 < U=1)
 
 Por orden de más eficiente a menos quedarían:
 1. Ascendente umbral 100
@@ -420,9 +420,9 @@ Por orden de más eficiente a menos quedarían:
 4. Aleatorio umbral 10
 5. Ascendente umbral 1
 6. Aleatorio umbral 1
-7. Descendente umbral 10
-8. Descendente umbral 1
-9. Descendente umbral 100
+7. Descendente umbral 100
+8. Descendente umbral 10
+9. Descendente umbral 1
 
 Finalmente, vamos a comparar los resultados obtenidos de la ordenación rápida con los resultados de la ordenación shell de la práctica anterior (para vectores inicializados aleatorios).
 Vamos a tomar como referencia n = 32000 por ejemplo.
